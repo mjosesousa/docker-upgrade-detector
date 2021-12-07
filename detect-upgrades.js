@@ -1,48 +1,54 @@
 #! /usr/bin/env node
 
 const fs = require("fs");
-const ini = require("ini");
 const https = require("https");
 
 const dir = "./projects/";
 
-//read all projects in the directory
-fs.readdir(dir, (err, files) => {
-  if (err) {
-    throw err;
-  }
+const args = process.argv.slice(2);
 
-  // for each project
-  files.forEach((file) => {
-    // Print project name
-    console.log("####" + file.replace(/\.[^/.]+$/, ""));
+if (args.length == 0) {
+  console.log(
+    "USAGE [repo/name]:[current.version.number] ex.: library/mysql:5.7.11"
+  );
+  return;
+}
 
-    // Parse
-    const project = ini.parse(fs.readFileSync(dir + file, "utf-8"));
+// for each project
+args.forEach((arg) => {
+  argSplit = arg.split(":");
+  const dependency = {
+    repository: argSplit[0],
+    currentVersion: argSplit[1],
+  };
 
-    // for each Section of the ini file (each Section represents one of the dependencies)
-    for (var dependency in project) {
-      detectDependencyNewVersions(project[dependency]);
-    }
-  });
+  detectDependencyNewVersions(dependency);
 });
 
 function detectDependencyNewVersions(dependency) {
-  console.log(
-    `Current ${dependency.name} Version: ${dependency.currentVersion}`
-  );
-  const [currentMajor, currentMinor, currentPatch] =
-    dependency.currentVersion.split(".");
-
   const options = {
     host: "registry.hub.docker.com",
-    path: `/v2/repositories/library/${dependency.repository}/tags/`,
+    path: `/v2/repositories/${dependency.repository}/tags/?page_size=9999999`,
   };
 
   https.get(options, (res) => {
     res.setEncoding("utf-8");
-    res.on("data", (d) => {
-      var latestTags = JSON.parse(d);
+
+    var data = "";
+
+    res.on("data", function (chunk) {
+      data += chunk;
+    });
+
+    res.on("end", () => {
+      // console.log(dependency);
+      console.log(
+        `Current ${dependency.repository} Version: ${dependency.currentVersion}`
+      );
+      const [currentMajor, currentMinor, currentPatch] =
+        dependency.currentVersion.split(".");
+      // console.log(data);
+      var latestTags = JSON.parse(data);
       var versionsArray = [];
       latestTags.results.forEach((tag) => {
         let [tagMajor, tagMinor, tagPatch] = tag.name.split(".");

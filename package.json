@@ -16,7 +16,5 @@
     "url": "https://github.com/mjosesousa/docker-upgrade-detector/issues"
   },
   "homepage": "https://github.com/mjosesousa/docker-upgrade-detector#readme",
-  "dependencies": {
-    "ini": "^2.0.0"
-  }
+  "dependencies": {}
 }
