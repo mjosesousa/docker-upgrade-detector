@@ -1,24 +1,17 @@
 Checks new docker registry tag versions, given the image versions used on your projects.
 
 ## Usage
+`npm install`
 
-create a `versions-to-check.json` file with relevant data.
+create a `[project name].ini` file for each project with relevant data.
 
-run `node detect-upgrades.js`
+run `node detect-upgrades`
 
-## Example versions-to-check.json file
+## Example BoatShop.ini file
 
-```json
-[
-  {
-    "projectName": "Boat Shop",
-    "dependencies": [
-      {
-        "name": "MySQL",
-        "currentVersion": "5.7.11",
-        "repository": "mysql"
-      }
-    ]
-  }
-]
+```ini
+[MySQL]
+name                = MySQL
+currentVersion      = 5.7.11
+repository          = mysql
 ```

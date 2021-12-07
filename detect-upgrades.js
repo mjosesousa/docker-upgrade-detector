@@ -1,17 +1,29 @@
 #! /usr/bin/env node
 
 const fs = require("fs");
+const ini = require("ini");
 const https = require("https");
 
-fs.readFile("./versions-to-check.json", (err, data) => {
-  if (err) throw err;
-  const projects = JSON.parse(data);
-  projects.forEach((project) => {
-    console.log("\x1b[34m%s\x1b[0m", `### Project: ${project.projectName}`);
+const dir = "./projects/";
 
-    project.dependencies.forEach((dependency) => {
-      detectDependencyNewVersions(dependency);
-    });
+//read all projects in the directory
+fs.readdir(dir, (err, files) => {
+  if (err) {
+    throw err;
+  }
+
+  // for each project
+  files.forEach((file) => {
+    // Print project name
+    console.log("####" + file.replace(/\.[^/.]+$/, ""));
+
+    // Parse
+    const project = ini.parse(fs.readFileSync(dir + file, "utf-8"));
+
+    // for each Section of the ini file (each Section represents one of the dependencies)
+    for (var dependency in project) {
+      detectDependencyNewVersions(project[dependency]);
+    }
   });
 });
 
@@ -41,8 +53,6 @@ function detectDependencyNewVersions(dependency) {
           updated: tag.last_updated,
         });
       });
-      // console.table(versionsArray);
-
       var latestMajor = 0;
       var latestMinor = 0;
       var latestPatch = 0;

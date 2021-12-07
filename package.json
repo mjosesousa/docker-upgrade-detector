@@ -1,0 +1,22 @@
+{
+  "name": "docker-version-detector",
+  "version": "1.0.0",
+  "description": "node cli application that takes the version numbers of the dependencies you are using in a docker project and tells you with updates exists by checking the tags on the repository",
+  "main": "detect-upgrades.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjosesousa/docker-upgrade-detector.git"
+  },
+  "author": "mjosesousa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mjosesousa/docker-upgrade-detector/issues"
+  },
+  "homepage": "https://github.com/mjosesousa/docker-upgrade-detector#readme",
+  "dependencies": {
+    "ini": "^2.0.0"
+  }
+}
