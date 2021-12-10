@@ -10,14 +10,19 @@ const args = process.argv.slice(2);
 
 if (args.length == 0) {
   console.log(
-    "USAGE [repo/name]:[current.version.number] ex.: library/mysql:5.7.11"
+    "USAGE [repo/name]:[current.version.number] ex.: library/mysql:5.7.11\n"+
+    "-q as first argument to remove first collumn"
   );
   return;
 }
 
 // for each dependency
-var output = ["Respository", "Latest Major", "Latest Minor", "Latest Patch"];
-console.log(doColumns(output));
+if (args[0] != "-q") {
+  var output = ["Respository", "Latest Major", "Latest Minor", "Latest Patch"];
+  console.log(doColumns(output));
+} else {
+  args.shift();
+}
 // args.forEach(async (arg) => {});
 processDependencies(args);
 // console.log(columns(output, { sort: false }));
