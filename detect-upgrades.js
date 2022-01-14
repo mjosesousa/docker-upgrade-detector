@@ -10,8 +10,8 @@ const args = process.argv.slice(2);
 
 if (args.length == 0) {
   console.log(
-    "USAGE [repo/name]:[current.version.number] ex.: library/mysql:5.7.11\n"+
-    "-q as first argument to remove first collumn"
+    "USAGE [repo/name]:[current.version.number] ex.: library/mysql:5.7.11\n" +
+      "-q as first argument to remove first collumn"
   );
   return;
 }
@@ -54,8 +54,14 @@ function doColumns(output) {
 function detectDependencyNewVersions(dependency) {
   return new Promise((resolve, reject) => {
     const options = {
-      host: "registry.hub.docker.com",
-      path: `/v2/repositories/${dependency.repository}/tags/?page_size=9999999`,
+      host:
+        dependency.repository != "library/wordpress"
+          ? "registry.hub.docker.com"
+          : "api.wordpress.org",
+      path:
+        dependency.repository != "library/wordpress"
+          ? `/v2/repositories/${dependency.repository}/tags/?page_size=9999999`
+          : "/core/version-check/1.7/",
     };
 
     https.get(options, (res) => {
@@ -72,15 +78,27 @@ function detectDependencyNewVersions(dependency) {
           dependency.currentVersion.split(".");
         var latestTags = JSON.parse(data);
         var versionsArray = [];
-        latestTags.results.forEach((tag) => {
-          let [tagMajor, tagMinor, tagPatch] = tag.name.split(".");
-          versionsArray.push({
-            major: Number.parseInt(tagMajor),
-            minor: Number.parseInt(tagMinor),
-            patch: Number.parseInt(tagPatch),
-            updated: tag.last_updated,
+        if (dependency.repository != "library/wordpress")
+          latestTags.results.forEach((tag) => {
+            let [tagMajor, tagMinor, tagPatch] = tag.name.split(".");
+            versionsArray.push({
+              major: Number.parseInt(tagMajor),
+              minor: Number.parseInt(tagMinor),
+              patch: Number.parseInt(tagPatch),
+              updated: tag.last_updated,
+            });
           });
-        });
+        else {
+          latestTags.offers.forEach((version) => {
+            let [tagMajor, tagMinor, tagPatch] = version.version.split(".");
+            versionsArray.push({
+              major: Number.parseInt(tagMajor),
+              minor: Number.parseInt(tagMinor),
+              patch: Number.parseInt(tagPatch),
+              updated: "",
+            });
+          });
+        }
         var latestMajor = 0;
         var latestMinor = 0;
         var latestPatch = 0;
