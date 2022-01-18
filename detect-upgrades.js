@@ -1,31 +1,35 @@
 #! /usr/bin/env node
 
-const fs = require("fs");
 const https = require("https");
 const columns = require("cli-columns");
-
-const dir = "./projects/";
 
 const args = process.argv.slice(2);
 
 if (args.length == 0) {
   console.log(
     "USAGE [repo/name]:[current.version.number] ex.: library/mysql:5.7.11\n" +
-      "-q as first argument to remove first collumn"
+      "-q to remove first row\n" +
+      "-nw to avoid workarounds"
   );
   return;
 }
 
 // for each dependency
-if (args[0] != "-q") {
+if (args.indexOf("-q") == -1) {
   var output = ["Respository", "Latest Major", "Latest Minor", "Latest Patch"];
   console.log(doColumns(output));
 } else {
-  args.shift();
+  args.splice(args.indexOf("-q"), 1);
 }
-// args.forEach(async (arg) => {});
+
+var nw = false;
+// no workarounds
+if (args.indexOf("-nw") > -1) {
+  nw = true;
+  args.splice(args.indexOf("-nw", 1));
+}
+
 processDependencies(args);
-// console.log(columns(output, { sort: false }));
 
 async function processDependencies(args) {
   for (let i = 0; i < args.length; i++) {
@@ -53,16 +57,29 @@ function doColumns(output) {
 
 function detectDependencyNewVersions(dependency) {
   return new Promise((resolve, reject) => {
-    const options = {
-      host:
-        dependency.repository != "library/wordpress"
-          ? "registry.hub.docker.com"
-          : "api.wordpress.org",
-      path:
-        dependency.repository != "library/wordpress"
-          ? `/v2/repositories/${dependency.repository}/tags/?page_size=9999999`
-          : "/core/version-check/1.7/",
+    const optionsDefault = {
+      host: "registry.hub.docker.com",
+      path: `/v2/repositories/${dependency.repository}/tags/?page_size=9999999`,
     };
+
+    var options = optionsDefault;
+
+    if (nw) {
+      options = optionsDefault;
+    } else {
+      switch (dependency.repository) {
+        case "library/wordpress":
+          options = {
+            host: "api.wordpress.org",
+            path: "/core/version-check/1.7/",
+          };
+          break;
+
+        default:
+          options = optionsDefault;
+          break;
+      }
+    }
 
     https.get(options, (res) => {
       res.setEncoding("utf-8");
@@ -78,27 +95,20 @@ function detectDependencyNewVersions(dependency) {
           dependency.currentVersion.split(".");
         var latestTags = JSON.parse(data);
         var versionsArray = [];
-        if (dependency.repository != "library/wordpress")
-          latestTags.results.forEach((tag) => {
-            let [tagMajor, tagMinor, tagPatch] = tag.name.split(".");
-            versionsArray.push({
-              major: Number.parseInt(tagMajor),
-              minor: Number.parseInt(tagMinor),
-              patch: Number.parseInt(tagPatch),
-              updated: tag.last_updated,
-            });
-          });
+
+        if (nw) versionsArray.concat(getTagsFromDockerHub(latestTags));
         else {
-          latestTags.offers.forEach((version) => {
-            let [tagMajor, tagMinor, tagPatch] = version.version.split(".");
-            versionsArray.push({
-              major: Number.parseInt(tagMajor),
-              minor: Number.parseInt(tagMinor),
-              patch: Number.parseInt(tagPatch),
-              updated: "",
-            });
-          });
+          switch (dependency.repository) {
+            case "library/wordpress":
+              versionsArray.concat(workaroundWordpress(latestTags));
+              break;
+
+            default:
+              versionsArray.concat(getTagsFromDockerHub(latestTags));
+              break;
+          }
         }
+
         var latestMajor = 0;
         var latestMinor = 0;
         var latestPatch = 0;
@@ -134,4 +144,32 @@ function detectDependencyNewVersions(dependency) {
       });
     });
   });
+}
+
+function workaroundWordpress(latestTags) {
+  let versionsArray = [];
+  latestTags.offers.forEach((version) => {
+    let [tagMajor, tagMinor, tagPatch] = version.version.split(".");
+    versionsArray.push({
+      major: Number.parseInt(tagMajor),
+      minor: Number.parseInt(tagMinor),
+      patch: Number.parseInt(tagPatch),
+      updated: "",
+    });
+  });
+  return versionsArray;
+}
+
+function getTagsFromDockerHub(latestTags) {
+  let versionsArray = [];
+  latestTags.results.forEach((tag) => {
+    let [tagMajor, tagMinor, tagPatch] = tag.name.split(".");
+    versionsArray.push({
+      major: Number.parseInt(tagMajor),
+      minor: Number.parseInt(tagMinor),
+      patch: Number.parseInt(tagPatch),
+      updated: tag.last_updated,
+    });
+  });
+  return versionsArray;
 }
