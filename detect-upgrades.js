@@ -96,15 +96,15 @@ function detectDependencyNewVersions(dependency) {
         var latestTags = JSON.parse(data);
         var versionsArray = [];
 
-        if (nw) versionsArray.concat(getTagsFromDockerHub(latestTags));
+        if (nw) versionsArray = getTagsFromDockerHub(latestTags);
         else {
           switch (dependency.repository) {
             case "library/wordpress":
-              versionsArray.concat(workaroundWordpress(latestTags));
+              versionsArray = workaroundWordpress(latestTags);
               break;
 
             default:
-              versionsArray.concat(getTagsFromDockerHub(latestTags));
+              versionsArray = getTagsFromDockerHub(latestTags);
               break;
           }
         }
